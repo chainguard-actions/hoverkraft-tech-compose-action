@@ -1,0 +1,7 @@
+version: "3.8"
+services:
+  hello:
+    image: hello-world
+  echo:
+    image: alpine
+    command: ["echo", "hello from echo service"]

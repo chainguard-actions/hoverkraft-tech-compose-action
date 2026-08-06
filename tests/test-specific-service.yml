@@ -1,0 +1,38 @@
+name: Test specific service selection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create multi-service compose file
+        run: |
+          printf 'services:\n  service-a:\n    image: nginx:alpine\n    ports:\n      - "8083:80"\n  service-b:\n    image: nginx:alpine\n    ports:\n      - "8084:80"\n' > "$GITHUB_WORKSPACE/multi-compose.yml"
+          cat "$GITHUB_WORKSPACE/multi-compose.yml"
+
+      - id: action
+        uses: .
+        with:
+          compose-file: ./multi-compose.yml
+          services: service-a
+          up-flags: "--detach"
+          services-log-level: "info"
+
+      - name: Assert only service-a was started
+        run: |
+          echo "Checking that only service-a was started..."
+          SERVICE_A=$(docker compose -f "$GITHUB_WORKSPACE/multi-compose.yml" ps --format json 2>/dev/null | grep -c "service-a" || true)
+          SERVICE_B=$(docker compose -f "$GITHUB_WORKSPACE/multi-compose.yml" ps --format json 2>/dev/null | grep -c "service-b" || true)
+          echo "service-a count: $SERVICE_A"
+          echo "service-b count: $SERVICE_B"
+          if [ "$SERVICE_A" -lt "1" ]; then
+            echo "FAIL: service-a should have been started"
+            exit 1
+          fi
+          if [ "$SERVICE_B" -gt "0" ]; then
+            echo "FAIL: service-b should not have been started"
+            exit 1
+          fi
+          echo "PASS: only service-a was started"

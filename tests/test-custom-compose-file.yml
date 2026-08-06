@@ -1,0 +1,32 @@
+name: Test custom compose file path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create custom compose file in workspace
+        run: |
+          printf 'services:\n  myservice:\n    image: nginx:alpine\n    ports:\n      - "8081:80"\n' > "$GITHUB_WORKSPACE/custom-compose.yml"
+          cat "$GITHUB_WORKSPACE/custom-compose.yml"
+
+      - id: action
+        uses: .
+        with:
+          compose-file: ./custom-compose.yml
+          up-flags: "--detach"
+          services-log-level: "info"
+
+      - name: Assert custom compose service is running
+        run: |
+          echo "Checking that action completed successfully with custom compose file..."
+          RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/custom-compose.yml" ps -q 2>/dev/null | wc -l)
+          echo "Running containers: $RUNNING"
+          if [ "$RUNNING" -gt "0" ]; then
+            echo "PASS: action completed with custom compose file and service is running"
+          else
+            echo "FAIL: no services running after action with custom compose file"
+            exit 1
+          fi

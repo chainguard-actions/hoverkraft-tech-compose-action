@@ -1,0 +1,14 @@
+name: Mark stale issues and pull requests
+
+on:
+  schedule:
+    - cron: "30 1 * * *"
+
+permissions: {}
+
+jobs:
+  main:
+    uses: hoverkraft-tech/ci-github-common/.github/workflows/stale.yml@2334d395217f9811699dbd4ace9d8559e4d99e0d # 0.37.3
+    permissions:
+      issues: write
+      pull-requests: write

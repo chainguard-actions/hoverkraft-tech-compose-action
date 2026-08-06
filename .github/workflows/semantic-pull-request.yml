@@ -1,0 +1,17 @@
+name: "Pull Request - Semantic Lint"
+
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] validates PR metadata only through a pinned reusable workflow without checkout
+    types:
+      - opened
+      - edited
+      - synchronize
+
+permissions: {}
+
+jobs:
+  main:
+    uses: hoverkraft-tech/ci-github-common/.github/workflows/semantic-pull-request.yml@2334d395217f9811699dbd4ace9d8559e4d99e0d # 0.37.3
+    permissions:
+      contents: write
+      pull-requests: write

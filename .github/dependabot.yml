@@ -1,0 +1,78 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 7
+    schedule:
+      interval: weekly
+      day: friday
+      time: "04:00"
+    groups:
+      github-actions-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directories:
+      - "/test"
+      - "/"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 7
+    schedule:
+      interval: weekly
+      day: friday
+      time: "04:00"
+    groups:
+      docker-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker-compose
+    directory: "/test"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 7
+    schedule:
+      interval: weekly
+      day: friday
+      time: "04:00"
+    groups:
+      docker-compose-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: "/"
+    open-pull-requests-limit: 20
+    versioning-strategy: increase
+    cooldown:
+      default-days: 7
+    schedule:
+      interval: weekly
+      day: friday
+      time: "04:00"
+    groups:
+      npm-actions-dependencies:
+        patterns:
+          - "@actions/*"
+      npm-development-dependencies:
+        dependency-type: development
+        patterns:
+          - "*"
+      npm-production-dependencies:
+        dependency-type: production
+        patterns:
+          - "*"
+
+  - package-ecosystem: "devcontainers"
+    open-pull-requests-limit: 20
+    directory: "/"
+    cooldown:
+      default-days: 7
+    schedule:
+      interval: weekly
+      day: friday
+      time: "04:00"

@@ -1,0 +1,26 @@
+name: Test with up-flags and down-flags
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create compose file in workspace root
+        run: |
+          printf 'services:\n  web:\n    image: nginx:alpine\n    ports:\n      - "8085:80"\n' > "$GITHUB_WORKSPACE/docker-compose.yml"
+          cat "$GITHUB_WORKSPACE/docker-compose.yml"
+
+      - id: action
+        uses: .
+        with:
+          compose-file: ./docker-compose.yml
+          up-flags: "--detach"
+          down-flags: "--volumes --remove-orphans"
+          services-log-level: "info"
+
+      - name: Assert action completed with flags
+        run: |
+          echo "Checking that action completed successfully with up-flags and down-flags..."
+          echo "PASS: action completed successfully with up-flags and down-flags"

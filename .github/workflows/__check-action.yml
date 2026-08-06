@@ -1,0 +1,282 @@
+name: Internal - Tests for action
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.name }} - ${{ matrix.assertion-name }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Given multiple services when filtering services
+            assertion-name: "Then only expected services run"
+            compose-file: ./test/docker-compose.yml
+            services: |
+              service-b
+              service-c
+            assertion: |
+              docker compose -f ./test/docker-compose.yml ps
+
+              docker compose -f ./test/docker-compose.yml ps | grep test-service-b-1 || (echo "Service service-b is not running" && exit 1)
+              docker compose -f ./test/docker-compose.yml ps | grep test-service-c-1 || (echo "Service service-c is not running" && exit 1)
+              (docker compose -f ./test/docker-compose.yml ps | grep test-service-a-1 && echo "Unexpected service service-a is running" && exit 1) || true
+
+          - name: Given compose file when applying down flags
+            assertion-name: "Then teardown honors down flags"
+            compose-file: ./test/docker-compose.yml
+            down-flags: "--volumes"
+            assertion: |
+              docker compose -f ./test/docker-compose.yml ps
+
+              docker compose -f ./test/docker-compose.yml ps | grep test-service-a-1 || (echo "Service service-a is not running" && exit 1)
+              (docker compose -f ./test/docker-compose.yml ps | grep test-service-b-1 && echo "Service service-b should not be running without profile" && exit 1) || true
+              (docker compose -f ./test/docker-compose.yml ps | grep test-service-c-1 && echo "Service service-c should not be running without profile" && exit 1) || true
+
+          - name: Given compose profile when passing compose flags
+            assertion-name: "Then the requested profile is active"
+            compose-file: ./test/docker-compose.yml
+            compose-flags: "--profile profile-1"
+            down-flags: "--volumes"
+            assertion: |
+              docker compose -f ./test/docker-compose.yml -p profile-1 ps || (echo "Profile not used" && exit 1)
+
+          - name: Given image supplied via env when running action
+            assertion-name: "Then compose uses the provided env"
+            compose-file: ./test/docker-compose-with-env.yml
+            image-name: busybox
+            assertion: |
+              docker compose -f ./test/docker-compose-with-env.yml ps
+
+              docker compose -f ./test/docker-compose-with-env.yml ps | grep test-service-a-1 || (echo "Service service-a is not running" && exit 1)
+
+          - name: Given multiple compose files when selecting services
+            assertion-name: "Then only services from selection run"
+            compose-file: |
+              ./test/docker-compose.yml
+              ./test/docker-compose.ci.yml
+            services: |
+              service-b
+              service-d
+            assertion: |
+              docker compose -f ./test/docker-compose.yml -f ./test/docker-compose.ci.yml ps
+
+              docker compose -f ./test/docker-compose.yml -f ./test/docker-compose.ci.yml ps | grep test-service-b-1 || (echo "Service service-b is not running" && exit 1)
+              docker compose -f ./test/docker-compose.yml -f ./test/docker-compose.ci.yml ps | grep test-service-d-1 || (echo "Service service-d is not running" && exit 1)
+              (docker compose -f ./test/docker-compose.yml -f ./test/docker-compose.ci.yml ps | grep test-service-a-1 && echo "Unexpected service service-a is running" && exit 1) || true
+              (docker compose -f ./test/docker-compose.yml -f ./test/docker-compose.ci.yml ps | grep test-service-c-1 && echo "Unexpected service service-c is running" && exit 1) || true
+
+          - name: Given compose file in subdirectory when setting cwd
+            assertion-name: "Then only expected services run"
+            compose-file: docker-compose.yml
+            cwd: ./test
+            services: |
+              service-b
+              service-c
+            assertion: |
+              docker compose -f ./test/docker-compose.yml ps
+
+              docker compose -f ./test/docker-compose.yml ps | grep test-service-b-1 || (echo "Service service-b is not running" && exit 1)
+              docker compose -f ./test/docker-compose.yml ps | grep test-service-c-1 || (echo "Service service-c is not running" && exit 1)
+              (docker compose -f ./test/docker-compose.yml ps | grep test-service-a-1 && echo "Unexpected service service-a is running" && exit 1) || true
+
+          - name: Given absolute compose path when running action
+            assertion-name: "Then only expected services run"
+            compose-file: test/docker-compose.yml
+            use-absolute-path: true
+            services: |
+              service-b
+              service-c
+            assertion: |
+              docker compose -f ./test/docker-compose.yml ps
+
+              docker compose -f ./test/docker-compose.yml ps | grep test-service-b-1 || (echo "Service service-b is not running" && exit 1)
+              docker compose -f ./test/docker-compose.yml ps | grep test-service-c-1 || (echo "Service service-c is not running" && exit 1)
+              (docker compose -f ./test/docker-compose.yml ps | grep test-service-a-1 && echo "Unexpected service service-a is running" && exit 1) || true
+
+          - name: Given compose with multiple services when using abort-on-container-exit
+            assertion-name: "Then execution stops on container exit"
+            compose-file: test/docker-compose-web-mysql.yml
+            up-flags: "--build --abort-on-container-exit --exit-code-from=web"
+            assertion: |
+              WEB_EXIT_CODE=$(docker compose -f ./test/docker-compose-web-mysql.yml ps web --all --format json | jq ".ExitCode")
+              [ "$WEB_EXIT_CODE" == "0" ] || (echo "Web service did not exit successfully" && exit 1)
+
+              MYSQL_STATE=$(docker compose -f ./test/docker-compose-web-mysql.yml ps mysql --all --format json | jq -r ".State")
+              if [ "$MYSQL_STATE" = "running" ]; then
+                echo "MySQL service is still running"
+                exit 1
+              fi
+
+          - name: Given failing dependency when attaching dependencies
+            assertion-name: "Then failing service exits with code 1"
+            compose-file: test/docker-compose-fail.yml
+            up-flags: "--attach-dependencies"
+            assertion: |
+              EXIT_CODE=$(docker compose -f ./test/docker-compose-fail.yml ps service-a --all --format json | jq ".ExitCode")
+              [ "$EXIT_CODE" == "1" ] || (echo "Service service-a did not exit with code 1" && exit 1)
+
+          - name: Given compose version mismatch when requesting explicit version
+            assertion-name: "Then docker compose reports the requested version"
+            compose-file: ./test/docker-compose.yml
+            compose-version: "2.29.0"
+            expected-compose-version: "2.29.0"
+            ensure-version-mismatch: true
+            assertion: |
+              CURRENT_DOCKER_COMPOSE_VERSION=$(docker compose version --short)
+              echo "Current docker compose version: $CURRENT_DOCKER_COMPOSE_VERSION"
+
+              if [ "$CURRENT_DOCKER_COMPOSE_VERSION" != "$DOCKER_COMPOSE_VERSION" ]; then
+                echo "Docker compose version is not in $DOCKER_COMPOSE_VERSION version"
+                exit 1
+              fi
+
+          - name: Given compose version mismatch when requesting latest version
+            assertion-name: "Then docker compose reports the requested version"
+            compose-file: ./test/docker-compose.yml
+            compose-version: latest
+            fetch-latest-compose: true
+            ensure-version-mismatch: true
+            assertion: |
+              CURRENT_DOCKER_COMPOSE_VERSION=$(docker compose version --short)
+              echo "Current docker compose version: $CURRENT_DOCKER_COMPOSE_VERSION"
+
+              if [ "$CURRENT_DOCKER_COMPOSE_VERSION" != "$DOCKER_COMPOSE_VERSION" ]; then
+                echo "Docker compose version is not in $DOCKER_COMPOSE_VERSION version"
+                exit 1
+              fi
+
+          - name: Given custom docker context when providing docker flags
+            assertion-name: "Then docker compose uses that context"
+            compose-file: ./test/docker-compose.yml
+            compose-version: latest
+            docker-flags: "--context test-context"
+            docker-context: test-context
+            assertion: |
+              CURRENT_CONTEXT=$(docker context show)
+              if [ "$CURRENT_CONTEXT" != "test-context" ]; then
+                echo "Docker context is '$CURRENT_CONTEXT' instead of 'test-context'"
+                exit 1
+              fi
+
+              docker compose -f ./test/docker-compose.yml ps
+
+              docker compose -f ./test/docker-compose.yml ps | grep test-service-a-1 || (echo "Service service-a is not running under custom context" && exit 1)
+              (docker compose -f ./test/docker-compose.yml ps | grep test-service-b-1 && echo "Service service-b should not be running without profile" && exit 1) || true
+
+          - name: Given OCI compose artifact when running action
+            assertion-name: "Then the OCI compose application runs"
+            compose-file: oci://localhost:5000/compose-action-test:latest
+            publish-oci-artifact: true
+            source-compose-file: ./test/docker-compose.yml
+            assertion: |
+              docker compose -f "$OCI_COMPOSE_FILE" ps service-a | grep service-a | grep "Up" || (echo "Service service-a is not running from the OCI artifact" && exit 1)
+
+    env:
+      DOCKER_COMPOSE_VERSION: ${{ matrix.expected-compose-version || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker context
+        if: ${{ matrix.docker-context }}
+        uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
+        with:
+          context: ${{ matrix.docker-context }}
+
+      - name: Resolve absolute compose path
+        if: ${{ matrix.use-absolute-path }}
+        id: compose-path
+        env:
+          COMPOSE_FILE: ${{ matrix.compose-file }}
+        run: |
+          safe=$(printf '%s' "$COMPOSE_FILE" | tr -d '\n\r')
+          echo "absolute=${GITHUB_WORKSPACE}/${safe}" >> "$GITHUB_OUTPUT"
+
+      - name: "Arrange: retrieve latest version of docker compose"
+        if: ${{ matrix.fetch-latest-compose }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const dockerComposeVersion = (await github.rest.repos.getLatestRelease({
+                owner: "docker",
+                repo: "compose",
+              })).data.tag_name.replace("v", "");
+
+            core.exportVariable('DOCKER_COMPOSE_VERSION', dockerComposeVersion);
+
+      - name: "Arrange: start local OCI registry"
+        if: ${{ matrix.publish-oci-artifact }}
+        # Keep the registry alive until the job ends because the action post hook
+        # reuses the OCI reference for docker compose logs and down.
+        run: |
+          OCI_REGISTRY_IMAGE=registry:2.8.3
+          OCI_REGISTRY_MAX_RETRIES=10
+          OCI_REGISTRY_RETRY_DELAY_SECONDS=1
+
+          # Keep the registry on port 5000 so it matches the OCI reference configured in the test matrix.
+          OCI_REGISTRY_CONTAINER_ID=$(docker run -d -p 5000:5000 "$OCI_REGISTRY_IMAGE")
+          echo "OCI_REGISTRY_CONTAINER_ID=$OCI_REGISTRY_CONTAINER_ID" >> "$GITHUB_ENV"
+
+          retry_count=0
+          while [ "$retry_count" -lt "$OCI_REGISTRY_MAX_RETRIES" ]; do
+            if curl --fail --silent http://localhost:5000/v2/ >/dev/null; then
+              exit 0
+            fi
+
+            retry_count=$((retry_count + 1))
+            sleep "$OCI_REGISTRY_RETRY_DELAY_SECONDS"
+          done
+
+          echo "Local OCI registry did not become ready on localhost:5000"
+          exit 1
+
+      - name: "Arrange: publish compose application as OCI artifact"
+        if: ${{ matrix.publish-oci-artifact }}
+        env:
+          MATRIX_COMPOSE_FILE: ${{ matrix.compose-file }}
+          MATRIX_SOURCE_COMPOSE_FILE: ${{ matrix.source-compose-file }}
+        run: |
+          OCI_REPOSITORY="$MATRIX_COMPOSE_FILE"
+          OCI_PUBLISH_TARGET="${OCI_REPOSITORY#oci://}"
+          docker compose -f "$MATRIX_SOURCE_COMPOSE_FILE" publish "$OCI_PUBLISH_TARGET"
+
+      - name: "Arrange: ensure original docker compose version is not the expected one"
+        if: ${{ matrix.ensure-version-mismatch }}
+        run: |
+          CURRENT_DOCKER_COMPOSE_VERSION=$(docker compose version --short)
+          echo "Current docker compose version: $CURRENT_DOCKER_COMPOSE_VERSION"
+
+          if [ "$CURRENT_DOCKER_COMPOSE_VERSION" == "$DOCKER_COMPOSE_VERSION" ]; then
+            echo "Docker compose version is already in $DOCKER_COMPOSE_VERSION version"
+            exit 1
+          fi
+
+      - name: Act
+        uses: ./
+        with:
+          compose-file: ${{ matrix.use-absolute-path && steps.compose-path.outputs.absolute || matrix.compose-file }}
+          services: ${{ matrix.services || '' }}
+          down-flags: ${{ matrix.down-flags || '' }}
+          compose-flags: ${{ matrix.compose-flags || '' }}
+          compose-version: ${{ matrix.compose-version || '' }}
+          cwd: ${{ matrix.cwd || '' }}
+          up-flags: ${{ matrix.up-flags || '' }}
+          docker-flags: ${{ matrix.docker-flags || '' }}
+        env:
+          IMAGE_NAME: ${{ matrix.image-name || '' }}
+
+      - name: ${{ matrix.assertion-name }}
+        if: ${{ matrix.assertion }}
+        env:
+          IMAGE_NAME: ${{ matrix.image-name || '' }}
+          OCI_COMPOSE_FILE: ${{ matrix.compose-file || '' }}
+          ASSERTION: ${{ matrix.assertion }}
+        run: bash -e -- <(printf '%s' "$ASSERTION")

@@ -1,0 +1,34 @@
+name: Test cwd input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create compose file in a subdirectory
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/test-cwd-dir"
+          printf 'services:\n  web:\n    image: nginx:alpine\n    ports:\n      - "8082:80"\n' > "$GITHUB_WORKSPACE/test-cwd-dir/docker-compose.yml"
+          cat "$GITHUB_WORKSPACE/test-cwd-dir/docker-compose.yml"
+
+      - id: action
+        uses: .
+        with:
+          compose-file: ./docker-compose.yml
+          cwd: ${{ github.workspace }}/test-cwd-dir
+          up-flags: "--detach"
+          services-log-level: "info"
+
+      - name: Assert action completed with cwd input
+        run: |
+          echo "Checking that action completed successfully using cwd to resolve compose file..."
+          RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/test-cwd-dir/docker-compose.yml" ps -q 2>/dev/null | wc -l)
+          echo "Running containers: $RUNNING"
+          if [ "$RUNNING" -gt "0" ]; then
+            echo "PASS: action completed successfully using cwd to resolve compose file"
+          else
+            echo "FAIL: no services running after action with cwd input"
+            exit 1
+          fi

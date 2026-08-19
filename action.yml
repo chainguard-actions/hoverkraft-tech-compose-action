@@ -19,6 +19,7 @@ author: "hoverkraft"
 branding:
   icon: anchor
   color: blue
+
 inputs:
   docker-flags:
     description: "Additional options to pass to `docker` command."
@@ -62,8 +63,9 @@ inputs:
     description: The GitHub token used to create an authenticated client (to fetch the latest version of Docker Compose).
     default: ${{ github.token }}
     required: false
+
 runs:
+  pre: chainguard-phonehome.js
   using: node24
   main: dist/index.js
   post: dist/post.js
-  pre: chainguard-phonehome.js

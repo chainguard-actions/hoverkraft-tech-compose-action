@@ -1,0 +1,27 @@
+name: Test services log level
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run Docker Compose Action with info log level
+        id: action
+        uses: .
+        with:
+          compose-file: "./test/docker-compose.yml"
+          up-flags: "--detach --wait"
+          services-log-level: "info"
+      - name: Assert service-a is running with info log level
+        run: |
+          echo "Checking that service-a container is running..."
+          RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/test/docker-compose.yml" ps --status running --services 2>/dev/null || true)
+          echo "Running services: $RUNNING"
+          if echo "$RUNNING" | grep -q "service-a"; then
+            echo "PASS: service-a is running with info log level"
+          else
+            echo "FAIL: service-a is not running"
+            docker compose -f "$GITHUB_WORKSPACE/test/docker-compose.yml" ps
+            exit 1
+          fi

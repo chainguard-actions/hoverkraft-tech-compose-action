@@ -6,14 +6,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - id: action
+
+      - name: Run Docker Compose Action with docker-flags
+        id: action
         uses: .
         with:
-          compose-file: ${{ github.workspace }}/actions/hardened/hoverkraft-tech--compose-action/v3.0.0/tests/fixtures/docker-compose.yml
-          docker-flags: "--log-level info"
-          up-flags: "--detach --wait --wait-timeout 30"
-          down-flags: "--volumes"
-      - name: Assert action completed successfully with docker-flags
+          compose-file: "${{ github.workspace }}/tests/fixtures/docker-compose.yml"
+          up-flags: "--detach --wait"
+          docker-flags: "--log-level debug"
+
+      - name: Assert service is running
         run: |
-          echo "Action completed with docker-flags '--log-level info' without error"
-          echo "PASS"
+          RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" ps --services --filter "status=running" 2>/dev/null || true)
+          echo "Running services: $RUNNING"
+          if ! echo "$RUNNING" | grep -q "service-a"; then
+            echo "FAIL: service-a is not running"
+            exit 1
+          fi
+          echo "PASS: service-a is running with docker-flags set"

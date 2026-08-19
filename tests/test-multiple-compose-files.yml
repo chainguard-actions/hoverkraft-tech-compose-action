@@ -1,0 +1,44 @@
+name: Test multiple compose files
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create second compose file for override
+        run: |
+          cat > /tmp/docker-compose-override.yml << 'EOF'
+          services:
+            service-b:
+              image: busybox
+              command: ["tail", "-f", "/dev/null"]
+          EOF
+
+      - name: Run Docker Compose Action with multiple compose files
+        id: action
+        uses: .
+        with:
+          compose-file: |
+            ${{ github.workspace }}/tests/fixtures/docker-compose.yml
+            /tmp/docker-compose-override.yml
+          up-flags: "--detach --wait"
+
+      - name: Assert both services are running
+        run: |
+          # Check service-a from first file
+          RUNNING_A=$(docker compose \
+            -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" \
+            -f /tmp/docker-compose-override.yml \
+            ps --services --filter "status=running" 2>/dev/null || true)
+          echo "Running services: $RUNNING_A"
+          if ! echo "$RUNNING_A" | grep -q "service-a"; then
+            echo "FAIL: service-a is not running"
+            exit 1
+          fi
+          if ! echo "$RUNNING_A" | grep -q "service-b"; then
+            echo "FAIL: service-b is not running"
+            exit 1
+          fi
+          echo "PASS: both services are running with multiple compose files"

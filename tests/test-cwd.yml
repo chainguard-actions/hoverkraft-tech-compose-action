@@ -1,4 +1,4 @@
-name: Test compose-version input
+name: Test custom working directory (cwd)
 on:
   workflow_dispatch:
 jobs:
@@ -7,20 +7,20 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Run Docker Compose Action with compose-version latest
+      - name: Run Docker Compose Action with custom cwd
         id: action
         uses: .
         with:
-          compose-file: "${{ github.workspace }}/tests/fixtures/docker-compose.yml"
+          compose-file: "./docker-compose.yml"
+          cwd: "${{ github.workspace }}/tests/fixtures"
           up-flags: "--detach --wait"
-          compose-version: "latest"
 
-      - name: Assert service is running
+      - name: Assert service is running using cwd-relative compose file
         run: |
           RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" ps --services --filter "status=running" 2>/dev/null || true)
           echo "Running services: $RUNNING"
           if ! echo "$RUNNING" | grep -q "service-a"; then
-            echo "FAIL: service-a is not running"
+            echo "FAIL: service-a is not running when using cwd input"
             exit 1
           fi
-          echo "PASS: service-a is running with compose-version=latest"
+          echo "PASS: service-a is running with custom cwd"

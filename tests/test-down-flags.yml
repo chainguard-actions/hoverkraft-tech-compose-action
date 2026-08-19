@@ -1,4 +1,4 @@
-name: Test compose-version input
+name: Test down-flags input
 on:
   workflow_dispatch:
 jobs:
@@ -7,15 +7,15 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Run Docker Compose Action with compose-version latest
+      - name: Run Docker Compose Action with down-flags
         id: action
         uses: .
         with:
           compose-file: "${{ github.workspace }}/tests/fixtures/docker-compose.yml"
           up-flags: "--detach --wait"
-          compose-version: "latest"
+          down-flags: "--remove-orphans"
 
-      - name: Assert service is running
+      - name: Assert service is running (down-flags are used on post hook)
         run: |
           RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" ps --services --filter "status=running" 2>/dev/null || true)
           echo "Running services: $RUNNING"
@@ -23,4 +23,4 @@ jobs:
             echo "FAIL: service-a is not running"
             exit 1
           fi
-          echo "PASS: service-a is running with compose-version=latest"
+          echo "PASS: service-a is running; down-flags will be applied on post hook cleanup"

@@ -1,0 +1,30 @@
+name: Test specific service selection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run Docker Compose Action with specific service
+        id: action
+        uses: .
+        with:
+          compose-file: "${{ github.workspace }}/tests/fixtures/docker-compose-multi.yml"
+          services: "service-a"
+          up-flags: "--detach --wait"
+
+      - name: Assert only service-a is running
+        run: |
+          RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose-multi.yml" ps --services --filter "status=running" 2>/dev/null || true)
+          echo "Running services: $RUNNING"
+          if ! echo "$RUNNING" | grep -q "service-a"; then
+            echo "FAIL: service-a is not running"
+            exit 1
+          fi
+          if echo "$RUNNING" | grep -q "service-b"; then
+            echo "FAIL: service-b should not be running (only service-a was requested)"
+            exit 1
+          fi
+          echo "PASS: only service-a is running as expected"

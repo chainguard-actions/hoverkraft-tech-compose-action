@@ -9,24 +9,24 @@ jobs:
 
       - name: Create compose file in workspace root
         run: |
-          printf 'services:\n  web:\n    image: nginx:alpine\n    ports:\n      - "8086:80"\n' > "$GITHUB_WORKSPACE/docker-compose.yml"
+          printf 'services:\n  web:\n    image: nginx:alpine\n    ports:\n      - "8087:80"\n' > "$GITHUB_WORKSPACE/docker-compose.yml"
           cat "$GITHUB_WORKSPACE/docker-compose.yml"
 
       - id: action
         uses: .
         with:
           compose-file: ./docker-compose.yml
+          docker-flags: "--log-level info"
           up-flags: "--detach"
-          docker-flags: "--log-level=info"
           services-log-level: "info"
 
       - name: Assert docker compose services are running with docker-flags
         run: |
-          echo "Checking docker compose services started with docker-flags..."
+          echo "Checking docker compose services started with docker-flags=--log-level info..."
           RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/docker-compose.yml" ps -q 2>/dev/null | wc -l)
           echo "Running containers: $RUNNING"
           if [ "$RUNNING" -gt "0" ]; then
-            echo "PASS: docker compose service is running with docker-flags set"
+            echo "PASS: docker compose service is running with docker-flags"
           else
             echo "FAIL: no docker compose services are running"
             exit 1

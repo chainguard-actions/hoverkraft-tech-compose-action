@@ -13,9 +13,9 @@ jobs:
         with:
           compose-file: "${{ github.workspace }}/tests/fixtures/docker-compose.yml"
           up-flags: "--detach --wait"
-          docker-flags: "--log-level debug"
+          docker-flags: "--log-level info"
 
-      - name: Assert service is running
+      - name: Assert service is running with docker-flags set
         run: |
           RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" ps --services --filter "status=running" 2>/dev/null || true)
           echo "Running services: $RUNNING"
@@ -23,4 +23,4 @@ jobs:
             echo "FAIL: service-a is not running"
             exit 1
           fi
-          echo "PASS: service-a is running with docker-flags set"
+          echo "PASS: service-a is running with docker-flags applied"

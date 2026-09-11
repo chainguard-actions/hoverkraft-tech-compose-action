@@ -15,7 +15,7 @@ jobs:
           up-flags: "--detach --wait"
           compose-version: "latest"
 
-      - name: Assert service is running
+      - name: Assert service is running after compose-version install
         run: |
           RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" ps --services --filter "status=running" 2>/dev/null || true)
           echo "Running services: $RUNNING"
@@ -23,4 +23,4 @@ jobs:
             echo "FAIL: service-a is not running"
             exit 1
           fi
-          echo "PASS: service-a is running with compose-version=latest"
+          echo "PASS: service-a is running with latest compose version"

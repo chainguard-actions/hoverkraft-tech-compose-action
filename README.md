@@ -10,6 +10,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 |---------|-----|-----------------|
 | v3.0.0 | [`v3.0.0`](https://github.com/chainguard-actions/hoverkraft-tech-compose-action/tree/v3.0.0) | [`11beaa1`](https://github.com/hoverkraft-tech/compose-action/commit/11beaa1c2dae4e8ed7b1665aa074723b6cecb0e4) |
 | v3.1.0 | [`v3.1.0`](https://github.com/chainguard-actions/hoverkraft-tech-compose-action/tree/v3.1.0) | [`ee6af68`](https://github.com/hoverkraft-tech/compose-action/commit/ee6af68587292d72db67743171809c19787df4c9) |
+| v3.2.0 | [`v3.2.0`](https://github.com/chainguard-actions/hoverkraft-tech-compose-action/tree/v3.2.0) | [`b659c74`](https://github.com/hoverkraft-tech/compose-action/commit/b659c744ee9bed25aea2307c017ad849bd104433) |
 
 ## Privacy
 

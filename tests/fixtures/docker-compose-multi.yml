@@ -1,0 +1,7 @@
+services:
+  service-a:
+    image: busybox
+    command: ["tail", "-f", "/dev/null"]
+  service-b:
+    image: busybox
+    command: ["tail", "-f", "/dev/null"]

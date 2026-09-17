@@ -1,0 +1,25 @@
+name: Test compose-version input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          compose-file: ./tests/fixtures/docker-compose.yml
+          up-flags: "--detach --wait"
+          compose-version: "latest"
+
+      - name: Assert service is running after compose-version install
+        run: |
+          RUNNING=$(docker compose -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" ps --status running --quiet 2>/dev/null | wc -l | tr -d ' ')
+          echo "Running containers: $RUNNING"
+          if [ "$RUNNING" -lt "1" ]; then
+            echo "FAIL: expected at least 1 running container, got $RUNNING"
+            exit 1
+          fi
+          echo "PASS: service is running with compose-version=latest"

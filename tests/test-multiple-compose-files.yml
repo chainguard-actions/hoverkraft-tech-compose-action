@@ -1,0 +1,39 @@
+name: Test multiple compose files
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          compose-file: |
+            ./tests/fixtures/docker-compose.yml
+            ./tests/fixtures/docker-compose-multi.yml
+          up-flags: "--detach --wait"
+
+      - name: Assert services from both compose files are running
+        run: |
+          # Check hello service from docker-compose.yml
+          HELLO=$(docker compose \
+            -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" \
+            -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose-multi.yml" \
+            ps --status running hello --quiet 2>/dev/null | wc -l | tr -d ' ')
+          echo "hello service running containers: $HELLO"
+
+          # Check service-a from docker-compose-multi.yml
+          SERVICE_A=$(docker compose \
+            -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose.yml" \
+            -f "$GITHUB_WORKSPACE/tests/fixtures/docker-compose-multi.yml" \
+            ps --status running service-a --quiet 2>/dev/null | wc -l | tr -d ' ')
+          echo "service-a running containers: $SERVICE_A"
+
+          if [ "$HELLO" -lt "1" ] || [ "$SERVICE_A" -lt "1" ]; then
+            echo "FAIL: expected services from both compose files to be running"
+            echo "  hello: $HELLO, service-a: $SERVICE_A"
+            exit 1
+          fi
+          echo "PASS: services from both compose files are running"

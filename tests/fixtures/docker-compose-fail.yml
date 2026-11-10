@@ -1,4 +1,0 @@
-services:
-  failing-service:
-    image: busybox
-    command: ["sh", "-c", "exit 1"]

@@ -4,8 +4,13 @@
   "version": "v3.2.0",
   "commit_sha": "b659c744ee9bed25aea2307c017ad849bd104433",
   "url": "https://github.com/hoverkraft-tech/compose-action",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/hoverkraft-tech/compose-action/v3.2.0/sha256-32cbb35dfe684a5832380d367353ce4f8b2a229c83cd2d6c54ca16e440d016ad.tar.gz",
+    "sha256": "32cbb35dfe684a5832380d367353ce4f8b2a229c83cd2d6c54ca16e440d016ad",
+    "size_bytes": 535206
+  }
 }

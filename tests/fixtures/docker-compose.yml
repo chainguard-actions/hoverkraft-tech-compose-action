@@ -1,4 +1,0 @@
-services:
-  hello:
-    image: busybox
-    command: ["sh", "-c", "echo 'hello from compose' && tail -f /dev/null"]

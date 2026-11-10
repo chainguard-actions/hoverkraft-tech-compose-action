@@ -1,4 +1,0 @@
-services:
-  service-a:
-    image: busybox
-    command: ["tail", "-f", "/dev/null"]

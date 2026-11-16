@@ -1,6 +1,16 @@
 {
   "owner": "hoverkraft-tech",
   "repo": "compose-action",
-  "version": "",
-  "url": "https://github.com/hoverkraft-tech/compose-action"
+  "version": "v3.2.1",
+  "commit_sha": "cdaf49f2d715a87c3387e86cb35c772b14f0efe0",
+  "url": "https://github.com/hoverkraft-tech/compose-action",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
+  "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
+  "test_agent_version": "2",
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/hoverkraft-tech/compose-action/v3.2.1/sha256-931929f1fc20b9341c550b7dc755a745c41587e52fc784c34e85b3c27342a1f4.tar.gz",
+    "sha256": "931929f1fc20b9341c550b7dc755a745c41587e52fc784c34e85b3c27342a1f4",
+    "size_bytes": 539645
+  }
 }

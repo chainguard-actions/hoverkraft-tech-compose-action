@@ -1,0 +1,5 @@
+services:
+  service-d:
+    image: busybox
+    command: ["tail", "-f", "/dev/null"]
+    profiles: [profile-2]
